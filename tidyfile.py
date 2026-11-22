@@ -326,6 +326,18 @@ def undo(root: Path, verbose: bool) -> int:
 # 命令行入口
 # ============================================================
 
+def confirm_interactive(root: Path) -> bool:
+    """
+    没有指定路径时(比如直接双击 exe),先向用户确认一次,
+    防止"exe 在哪个文件夹,双击就整理哪个"造成误操作。
+    """
+    try:
+        answer = input(f"  ❓ 将整理 {root} 里的文件,继续吗?(y = 继续 / 回车 = 取消): ")
+    except (EOFError, KeyboardInterrupt):
+        return False
+    return answer.strip().lower() in ("y", "yes", "是")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tidyfile",
@@ -339,7 +351,7 @@ def build_parser() -> argparse.ArgumentParser:
                "  python tidyfile.py . --undo               撤销上一次整理\n",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("path", nargs="?", default=".", metavar="目录",
+    parser.add_argument("path", nargs="?", default=None, metavar="目录",
                         help="要整理的文件夹路径,默认为当前目录")
     parser.add_argument("-r", "--recursive", action="store_true",
                         help="连子文件夹里的文件也一起整理")
@@ -360,13 +372,19 @@ def main(argv=None) -> int:
     setup_console()
     args = build_parser().parse_args(argv)
 
-    root = Path(args.path).expanduser().resolve()
+    path_given = args.path is not None
+    root = Path(args.path or ".").expanduser().resolve()
     if not root.is_dir():
         print(f"❌ 路径不存在或不是文件夹:{root}")
         return 1
 
     if args.undo:
         return undo(root, args.verbose)
+
+    # 没有指定路径(比如直接双击 exe)时,先确认一次,防止误整理
+    if not path_given and sys.stdin.isatty() and not confirm_interactive(root):
+        print("  👋 已取消,什么都没动。")
+        return 0
 
     print(f"🧹 整理:{root}")
     if args.dry_run:
