@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# 虚拟环境
+.venv/
+venv/
+
+# 编辑器
+.idea/
+.vscode/
+
+# 系统杂项
+.DS_Store
+Thumbs.db
+
+# tidyfile 自己的撤销账本(测试时产生)
+.tidyfile-manifest.json
